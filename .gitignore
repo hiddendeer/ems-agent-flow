@@ -19,7 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.agent/
 .claude/
 
 # 虚拟环境
