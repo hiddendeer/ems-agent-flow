@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # 智谱兼容 OpenAI 格式，可以使用 openai:glm-4-9b 等
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "openai:glm-4-plus")
     
+    # 搜索服务配置
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    
     # 其他配置
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
     
