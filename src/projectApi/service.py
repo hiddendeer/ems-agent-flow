@@ -2,8 +2,11 @@
 用户模块 - 业务逻辑层
 演示如何组织业务逻辑
 """
-from typing import Any
+from typing import Any, AsyncIterator
 from datetime import datetime
+import json
+import logging
+import os
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +16,8 @@ from src.projectApi.models import User
 from src.demo.models import Item
 from src.projectApi.schemas import UserCreate, UserResponse, UserUpdate
 from src.common.exceptions import NotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class UserCRUD(BaseCRUD[User, UserCreate, UserUpdate]):
@@ -245,5 +250,200 @@ async def update_login_info(
     
     # 增加登录次数
     update_data["login_count"] = (user.get("login_count") or 0) + 1
-    
+
     await user_crud.update(db=db, object=update_data, id=user_id)
+
+
+# ==========================================
+# Chat Agent 服务层
+# ==========================================
+
+# 简单的会话内存存储（生产环境应使用 Redis）
+_session_memory: dict[str, list[dict]] = {}
+
+
+class ChatAgentService:
+    """Chat Agent 服务类"""
+
+    def __init__(self):
+        from src.agents.domains import register_all_domains
+        from src.agents.core.factory import create_ems_agent
+        from src.agents.core.workspace import WorkspaceManager
+
+        # 注册所有领域 Agent
+        register_all_domains()
+
+        # 项目根目录
+        self.project_root = os.path.abspath(os.getcwd())
+
+    def _get_agent(self, user_id: str = "default_user"):
+        """获取或创建 Agent 实例"""
+        from src.agents.core.factory import create_ems_agent
+        from src.agents.core.workspace import WorkspaceManager
+
+        # 初始化工作区管理器
+        workspace_mgr = WorkspaceManager(self.project_root, user_id)
+
+        # 创建 Agent
+        agent = create_ems_agent(user_id=user_id)
+
+        return agent, workspace_mgr
+
+    def _get_session_messages(self, session_id: str) -> list[dict]:
+        """获取会话历史消息"""
+        return _session_memory.get(session_id, [])
+
+    def _save_session_message(self, session_id: str, role: str, content: str):
+        """保存消息到会话历史"""
+        if session_id not in _session_memory:
+            _session_memory[session_id] = []
+
+        _session_memory[session_id].append({
+            "role": role,
+            "content": content
+        })
+
+        # 限制历史记录数量（保留最近 20 条）
+        if len(_session_memory[session_id]) > 20:
+            _session_memory[session_id] = _session_memory[session_id][-20:]
+
+    async def chat_stream(
+        self,
+        message: str,
+        session_id: str | None = None,
+        user_id: str = "default_user"
+    ) -> AsyncIterator[dict]:
+        """
+        流式对话接口
+
+        Args:
+            message: 用户消息
+            session_id: 会话ID
+            user_id: 用户ID
+
+        Yields:
+            dict: 流式数据块
+                {
+                    "type": "token" | "error" | "done" | "metadata",
+                    "content": str | None,
+                    "metadata": dict | None,
+                    "error": str | None,
+                    "session_id": str | None
+                }
+        """
+        import time
+
+        # 生成新的 session_id
+        if not session_id:
+            import uuid
+            session_id = f"session_{uuid.uuid4().hex[:12]}"
+
+        try:
+            # 获取 Agent
+            agent, workspace_mgr = self._get_agent(user_id)
+
+            # 获取历史消息
+            history = self._get_session_messages(session_id)
+
+            # 构建消息列表
+            messages = []
+            for msg in history:
+                messages.append((msg["role"], msg["content"]))
+            messages.append(("user", message))
+
+            # 发送会话ID
+            yield {
+                "type": "metadata",
+                "content": None,
+                "metadata": {"session_id": session_id},
+                "session_id": session_id
+            }
+
+            start_time = time.time()
+            full_response = ""
+
+            # 流式调用 Agent
+            async for step in agent.astream({"messages": messages}):
+                if not isinstance(step, dict):
+                    continue
+
+                for node, values in step.items():
+                    # 跳过中间件节点
+                    if "Middleware" in node:
+                        continue
+
+                    if isinstance(values, dict) and "messages" in values:
+                        msgs_obj = values.get("messages", [])
+                        msgs = (
+                            getattr(msgs_obj, "value", msgs_obj)
+                            if not isinstance(msgs_obj, list)
+                            else msgs_obj
+                        )
+
+                        if msgs:
+                            last_msg = msgs[-1]
+                            msg_class = last_msg.__class__.__name__
+
+                            if msg_class == "AIMessage":
+                                content = last_msg.content or ""
+
+                                # 处理多模态消息
+                                if isinstance(content, list):
+                                    content = " ".join(
+                                        block.get("text", "")
+                                        for block in content
+                                        if isinstance(block, dict) and block.get("type") == "text"
+                                    )
+
+                                if content.strip():
+                                    # 发送 token
+                                    yield {
+                                        "type": "token",
+                                        "content": content,
+                                        "session_id": session_id
+                                    }
+                                    full_response = content
+
+            # 保存到历史
+            self._save_session_message(session_id, "user", message)
+            self._save_session_message(session_id, "assistant", full_response)
+
+            # 后台归档
+            try:
+                from src.agents.demo.multi_agent_demo import extract_and_archive_insights
+                insights = await extract_and_archive_insights(message, full_response, workspace_mgr)
+
+                yield {
+                    "type": "metadata",
+                    "content": f"\n📊 后台分析完成: {', '.join(insights)}",
+                    "metadata": {"archived": True},
+                    "session_id": session_id
+                }
+            except Exception as e:
+                logger.warning(f"后台归档失败: {e}")
+
+            # 计算耗时
+            elapsed_time = time.time() - start_time
+
+            # 发送完成信号
+            yield {
+                "type": "done",
+                "content": None,
+                "metadata": {
+                    "elapsed_time": elapsed_time,
+                    "response_length": len(full_response)
+                },
+                "session_id": session_id
+            }
+
+        except Exception as e:
+            logger.error(f"Chat stream error: {e}", exc_info=True)
+            yield {
+                "type": "error",
+                "error": str(e),
+                "session_id": session_id
+            }
+
+
+# 单例实例
+chat_service = ChatAgentService()

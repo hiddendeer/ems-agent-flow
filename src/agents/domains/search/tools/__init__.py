@@ -38,10 +38,10 @@ def internet_search_power_policy(query: str) -> str:
     
     try:
         # 执行搜索
-        # search_depth="advanced" 提供更深度的搜索
+        # 使用 basic 模式平衡速度与质量
         response = client.search(
             query=f"电力 储能 政策 {query}",
-            search_depth="advanced",
+            search_depth="basic",
             max_results=5,
             include_raw_content=False
         )
@@ -70,7 +70,7 @@ def search_market_research_reports(topic: str) -> str:
         # 针对研报搜索优化 query
         response = client.search(
             query=f"{topic} 电力行业 研究报告 研报 市场分析",
-            search_depth="advanced",
+            search_depth="basic",
             max_results=3
         )
         

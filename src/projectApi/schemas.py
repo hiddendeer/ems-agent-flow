@@ -104,3 +104,41 @@ class UserLoginResponse(CustomModel):
     session_key: str | None = Field(None, description="会话密钥")
     access_token: str | None = Field(None, description="访问令牌")
 
+
+# ==========================================
+# Chat 对话相关模型
+# ==========================================
+
+class ChatMessage(CustomModel):
+    """单条聊天消息"""
+    role: str = Field(..., description="角色：user/assistant/system")
+    content: str = Field(..., description="消息内容")
+    timestamp: datetime | None = Field(None, description="时间戳")
+
+
+class ChatRequest(CustomModel):
+    """聊天请求模型"""
+    message: str = Field(..., min_length=1, max_length=5000, description="用户消息内容")
+    session_id: str | None = Field(None, description="会话ID，用于多轮对话上下文")
+    user_id: str | None = Field("default_user", description="用户ID")
+    stream: bool = Field(True, description="是否使用流式输出")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "帮我查询江苏最新的分时电价政策",
+                "session_id": "session_123",
+                "user_id": "user_001",
+                "stream": True
+            }
+        }
+
+
+class ChatStreamChunk(CustomModel):
+    """流式响应数据块"""
+    type: str = Field(..., description="块类型：token/error/done/metadata")
+    content: str | None = Field(None, description="内容片段")
+    metadata: dict | None = Field(None, description="元数据信息")
+    error: str | None = Field(None, description="错误信息")
+    session_id: str | None = Field(None, description="会话ID")
+

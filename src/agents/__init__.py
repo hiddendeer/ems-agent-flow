@@ -19,11 +19,11 @@ deepagents 提供的核心运行时能力：
 
 快速使用：
     from src.agents import create_ems_agent, register_all_domains
-    
+
     register_all_domains()
     agent = create_ems_agent()
     result = await agent.ainvoke({
-        "messages": [("user", "调研广东省电价并制定储能策略")]
+        "messages": [("user", "调研最新分时电价政策并制定储能策略")]
     })
 """
 

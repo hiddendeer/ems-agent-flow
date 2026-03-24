@@ -19,25 +19,72 @@ logging.basicConfig(
 from ..domains import register_all_domains
 from ..core.factory import create_ems_agent
 from ..core.registry import AgentRegistry
+from ..core.workspace import WorkspaceManager
+import json
 
 # 注册所有领域 Agent
 register_all_domains()
+
+async def extract_and_archive_insights(user_query: str, final_response: str, workspace_mgr: WorkspaceManager):
+    """
+    真正的后台复盘：自动提取关键信息并归档到用户档案。
+    """
+    insights_extracted = []
+
+    # 提取省份信息
+    provinces = ["北京", "上海", "天津", "重庆", "江苏", "浙江", "安徽", "福建", "江西", "山东",
+                 "河南", "湖北", "湖南", "广东", "海南", "四川", "贵州", "云南", "陕西", "甘肃",
+                 "青海", "台湾", "内蒙古", "广西", "西藏", "宁夏", "新疆", "香港", "澳门", "河北",
+                 "山西", "辽宁", "吉林", "黑龙江"]
+
+    for province in provinces:
+        if province in user_query or province in final_response:
+            workspace_mgr.update_profile("business_context", "province", province)
+            insights_extracted.append(f"✓ 省份: {province}")
+            break
+
+    # 提取关键词主题
+    topics = []
+    if any(word in user_query or word in final_response for word in ["电价", "分时", "峰谷"]):
+        topics.append("分时电价咨询")
+    if any(word in user_query or word in final_response for word in ["储能", "电池", "充放电"]):
+        topics.append("储能系统咨询")
+    if any(word in user_query or word in final_response for word in ["政策", "文件", "通知"]):
+        topics.append("政策研究")
+
+    if topics:
+        topic_str = ", ".join(topics)
+        workspace_mgr.update_profile("notes", "recent_topics", topic_str)
+        insights_extracted.append(f"✓ 咨询主题: {topic_str}")
+
+    # 记录查询时间戳
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    workspace_mgr.update_profile("notes", "last_query_time", timestamp)
+    insights_extracted.append(f"✓ 查询时间: {timestamp}")
+
+    return insights_extracted
+
 
 async def run_cross_domain_analysis():
     """
     演示跨领域多 Agent 协作，带性能统计。
     """
-    
+
     # 强制创建报告目录，防止 Agent 写入失败
     report_path = "src/agents/reports"
     os.makedirs(report_path, exist_ok=True)
-    
+
+    # 初始化工作区管理器（用于真正的后台归档）
+    project_root = os.path.abspath(os.getcwd())
+    workspace_mgr = WorkspaceManager(project_root, "default_user")
+
     print(f"\n{'='*60}")
     print("🌐 EMS 多 Agent 智能协作系统 (powered by deepagents)")
     print(f"{'='*60}")
     print(f"📋 已注册领域 Agent: {AgentRegistry.get_names()}")
     print(f"{'='*60}\n")
-    
+
     # 创建 EMS Lead Agent
     agent = create_ems_agent()
 
@@ -132,10 +179,15 @@ async def run_cross_domain_analysis():
         print(f"🎟️  总 Token 消耗: {total_tokens if total_tokens > 0 else '未知'}")
         print(f"{'-'*60}")
 
-        # --- 异步复盘模式 (模拟后台归档) ---
+        # --- 真正的后台复盘模式 ---
         print(f"\n⚡ [后台动作]: 任务已完成。触发【异步复盘 Agent】归档此轮对话特征...")
-        await asyncio.sleep(1)
-        print(f"   ✅ [Background System]: 用户档案已自动更新 (User: 江苏省用电偏好).")
+        await asyncio.sleep(0.5)
+
+        insights = await extract_and_archive_insights(user_query, final_response, workspace_mgr)
+
+        print(f"   ✅ [Background System]: 用户档案已自动更新:")
+        for insight in insights:
+            print(f"      {insight}")
         print(f"{'='*60}")
         
     except Exception as e:

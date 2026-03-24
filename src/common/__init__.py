@@ -16,9 +16,6 @@ from src.common.database import (
     db_manager,
     get_db,
     get_db_dependency,
-    get_reporting_db,
-    get_system_db,
-    get_user_db,
 )
 
 # 异常定义
@@ -78,9 +75,6 @@ __all__ = [
     "db_manager",
     "get_db",
     "get_db_dependency",
-    "get_user_db",
-    "get_system_db",
-    "get_reporting_db",
     # 异常
     "AppException",
     "NotFoundException",

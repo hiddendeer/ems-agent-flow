@@ -39,11 +39,11 @@ class DatabaseManager:
     def get_engine(self, db_name: str | None = None):
         """
         获取数据库引擎
-        
+
         Args:
             db_name: 数据库名称，None 表示使用默认数据库
         """
-        key = db_name or settings.DB_NAME
+        key = db_name or "default"
 
         if key not in self._engines:
             if db_name:
@@ -51,15 +51,23 @@ class DatabaseManager:
             else:
                 url = settings.DATABASE_URL
 
-            self._engines[key] = create_async_engine(
-                url,
-                echo=settings.DB_ECHO,
-                pool_size=settings.DB_POOL_SIZE,
-                max_overflow=settings.DB_MAX_OVERFLOW,
-                pool_recycle=settings.DB_POOL_RECYCLE,
-                pool_pre_ping=True,           # 使用前检查连接（防止使用断开的连接）
-                pool_use_lifo=True,           # 后进先出（优先使用最近的连接）
-            )
+            # SQLite 不需要连接池配置
+            if settings.DB_TYPE == "sqlite":
+                self._engines[key] = create_async_engine(
+                    url,
+                    echo=settings.DB_ECHO,
+                )
+            else:
+                # MySQL 需要连接池配置
+                self._engines[key] = create_async_engine(
+                    url,
+                    echo=settings.DB_ECHO,
+                    pool_size=settings.DB_POOL_SIZE,
+                    max_overflow=settings.DB_MAX_OVERFLOW,
+                    pool_recycle=settings.DB_POOL_RECYCLE,
+                    pool_pre_ping=True,           # 使用前检查连接（防止使用断开的连接）
+                    pool_use_lifo=True,           # 后进先出（优先使用最近的连接）
+                )
 
         return self._engines[key]
 
@@ -137,8 +145,9 @@ def get_db_dependency(db_name: str):
     return _get_db
 
 
-# 预定义的数据库会话依赖
-get_user_db = get_db_dependency(settings.DB_USER_NAME)
-get_system_db = get_db_dependency(settings.DB_SYSTEM_NAME)
-get_reporting_db = get_db_dependency(settings.DB_REPORTING_NAME)
+# 预定义的数据库会话依赖（仅 MySQL 模式下使用）
+# if settings.DB_TYPE == "mysql":
+#     get_user_db = get_db_dependency(settings.DB_USER_NAME)
+#     get_system_db = get_db_dependency(settings.DB_SYSTEM_NAME)
+#     get_reporting_db = get_db_dependency(settings.DB_REPORTING_NAME)
 
