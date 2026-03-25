@@ -361,6 +361,7 @@ class ChatAgentService:
 
             start_time = time.time()
             full_response = ""
+            called_agents = set()  # 追踪调用的子智能体
 
             # 流式调用 Agent
             async for step in agent.astream({"messages": messages}):
@@ -385,6 +386,14 @@ class ChatAgentService:
                             msg_class = last_msg.__class__.__name__
 
                             if msg_class == "AIMessage":
+                                # 捕获调用的子智能体 (基于 deepagents 的 task 工具调用)
+                                if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                                    for tc in last_msg.tool_calls:
+                                        if tc["name"] == "task":
+                                            sub_type = tc["args"].get("subagent_type")
+                                            if sub_type:
+                                                called_agents.add(sub_type)
+
                                 content = last_msg.content or ""
 
                                 # 处理多模态消息
@@ -425,13 +434,22 @@ class ChatAgentService:
             # 计算耗时
             elapsed_time = time.time() - start_time
 
+            # 终端打印调用统计 (供开发者测试查看)
+            print(f"\n" + "="*60)
+            print(f"🌍 [EMS 多 Agent 协作统计]")
+            print(f"👤 用户请求: {message[:50]}...")
+            print(f"🤖 调用了 {len(called_agents)} 个子智能体: {', '.join(called_agents) if called_agents else '无'}")
+            print(f"⏱️ 总耗时: {elapsed_time:.2f}s")
+            print("="*60 + "\n")
+
             # 发送完成信号
             yield {
                 "type": "done",
                 "content": None,
                 "metadata": {
                     "elapsed_time": elapsed_time,
-                    "response_length": len(full_response)
+                    "response_length": len(full_response),
+                    "called_agents": list(called_agents)
                 },
                 "session_id": session_id
             }

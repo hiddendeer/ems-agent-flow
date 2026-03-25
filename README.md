@@ -109,6 +109,11 @@ pip install -r requirements.txt
 
 # 3. 运行多 Agent 协作演示
 python -m src.agents.demo.multi_agent_demo
+
+# 4. 运行网关
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess -Force
+
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ---
