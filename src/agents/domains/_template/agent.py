@@ -33,12 +33,24 @@ class TemplateAgent(DomainAgent):
         return []  # 替换为实际工具
     
     def get_system_prompt(self) -> str:
-        """返回领域系统提示词"""
+        """返回领域系统提示词 (角色定义、工作指令等)"""
         return "你是一个专业的...(替换为实际提示词)"
     
+    def get_skills(self) -> list[str]:
+        """
+        [可选] 返回该领域的知识库/技能目录路径列表。
+        deepagents 框架会自动分析该目录下所有含有 SKILL.md 的子目录，
+        并将其中的指令和知识注入给当前子智能体。
+        """
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        skill_dir = os.path.join(current_dir, "skills")
+        if os.path.exists(skill_dir):
+            return [skill_dir]
+        return []
+
     # 可选覆盖：
     # def get_model(self) -> str: return "openai:gpt-4o"
-    # def get_skills(self) -> list: return ["/skills/my_domain/"]
     # def get_middleware(self) -> list: return [MyCustomMiddleware()]
 
 
