@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ems_manager": {
+      "command": "python",
+      "args": [
+        "f:/AI_INFO/ems-agent-flow/src/mcp/server.py"
+      ],
+      "env": {
+        "API_BASE_URL": "http://localhost:8000"
+      }
+    }
+  }
+}

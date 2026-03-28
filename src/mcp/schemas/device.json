@@ -1,0 +1,31 @@
+{
+    "entity_name": "device",
+    "description": "新增、查询或编辑工业储能设备，如电池簇、PCS 变流器或电表。",
+    "operations": {
+        "create": { "endpoint": "/api/v1/devices", "method": "POST" },
+        "get":    { "endpoint": "/api/v1/devices/{id}", "method": "GET" },
+        "update": { "endpoint": "/api/v1/devices/{id}", "method": "PUT" },
+        "list":   { "endpoint": "/api/v1/devices", "method": "GET" }
+    },
+    "properties": {
+        "device_name": {
+            "type": "string",
+            "description": "设备的名称，例如：1号南侧电池组"
+        },
+        "device_type": {
+            "type": "string",
+            "enum": ["BATTERY", "PCS", "METER"],
+            "description": "设备类别"
+        },
+        "serial_number": {
+            "type": "string",
+            "description": "产品序列号 (S/N)"
+        },
+        "capacity_kwh": {
+            "type": "number",
+            "description": "设备额定容量 (kWh)，仅电池类需要",
+            "minimum": 0
+        }
+    },
+    "required": ["device_name", "device_type", "serial_number"]
+}
