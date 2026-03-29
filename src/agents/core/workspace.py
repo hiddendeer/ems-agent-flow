@@ -56,13 +56,26 @@ class WorkspaceManager:
             if category not in data:
                 data[category] = {}
             
+            # 1. 如果是字典类型 (preferences, business_context)
             if isinstance(data[category], dict):
                 data[category][key] = value
+            
+            # 2. 如果是列表类型 (notes) - 增强这里逻辑，防止只存时间
             elif isinstance(data[category], list):
                 category_list = data[category]
+                # 将 key 和 value 组合成更完整的描述，或者存为对象
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                # 构造综合描述：[分类/时间] 键: 值
+                composite_entry = f"[{timestamp}] {key}: {value}"
+                
                 # 简单排重处理
-                if value not in category_list:
-                    category_list.append(value)
+                if composite_entry not in category_list:
+                    # 如果列表太长，保留最近的 100 条
+                    category_list.append(composite_entry)
+                    if len(category_list) > 100:
+                        data[category] = category_list[-100:]
                 
             with open(self.profile_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
@@ -93,7 +106,8 @@ def create_memory_expert_tool(manager: WorkspaceManager) -> StructuredTool:
         name="update_user_memory",
         description=(
             "极为重要的“自我进化/长期记忆”工具。当用户提供长效背景参数（如自身省份、企业资产属性）、"
-            "或者对报告产出偏好提出约束时，立即使用此工具将其固化。"
-            "category参数必须是: 'preferences' (排版喜好), 'business_context' (业务参数属性), 'notes' (备忘录)。"
+            "或者对报告产出偏好提出约束、或者是需要记录重要的业务操作结果时，立即使用此工具将其固化。"
+            "category参数必须是: 'preferences' (排版喜好), 'business_context' (业务参数属性), 'notes' (备忘录/操作日志)。"
+            "如果是notes分类，key应该是摘要提示，value应该是详细的内容描述。"
         ),
     )

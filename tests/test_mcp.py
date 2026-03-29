@@ -90,10 +90,10 @@ async def test_mcp_connection():
                 result = await session.call_tool("create_record", {
                     "entity_name": "device",
                     "record_data": {
-                        "device_name": "测试电池组",
-                        "device_type": "BATTERY",
-                        "serial_number": "TEST-001",
-                        "capacity_kwh": 100
+                        "name": "测试电池组",
+                        "type": "BATTERY",
+                        "location": "测试实验室",
+                        "metadata": {"capacity": 100}
                     }
                 })
                 print(result.content[0].text)

@@ -57,11 +57,14 @@ async def extract_and_archive_insights(user_query: str, final_response: str, wor
         workspace_mgr.update_profile("notes", "recent_topics", topic_str)
         insights_extracted.append(f"✓ 咨询主题: {topic_str}")
 
-    # 记录查询时间戳
-    import datetime
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    workspace_mgr.update_profile("notes", "last_query_time", timestamp)
-    insights_extracted.append(f"✓ 查询时间: {timestamp}")
+    # 记录交互概要（如果发现重要动作）
+    if "✅" in final_response or "成功" in final_response:
+        action_summary = "执行了关键设备操作"
+        if "充电" in final_response: action_summary = "下发了充电指令"
+        if "放电" in final_response: action_summary = "下发了放电指令"
+        
+        workspace_mgr.update_profile("notes", "interaction_summary", action_summary)
+        insights_extracted.append(f"✓ 自动摘要: {action_summary}")
 
     return insights_extracted
 

@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -315,21 +316,6 @@ class ChatAgentService:
     ) -> AsyncIterator[dict]:
         """
         流式对话接口
-
-        Args:
-            message: 用户消息
-            session_id: 会话ID
-            user_id: 用户ID
-
-        Yields:
-            dict: 流式数据块
-                {
-                    "type": "token" | "error" | "done" | "metadata",
-                    "content": str | None,
-                    "metadata": dict | None,
-                    "error": str | None,
-                    "session_id": str | None
-                }
         """
         import time
 
@@ -361,7 +347,7 @@ class ChatAgentService:
 
             start_time = time.time()
             full_response = ""
-            called_agents = set()  # 追踪调用的子智能体
+            called_agents = set()
 
             # 流式调用 Agent
             async for step in agent.astream({"messages": messages}):
@@ -369,7 +355,6 @@ class ChatAgentService:
                     continue
 
                 for node, values in step.items():
-                    # 跳过中间件节点
                     if "Middleware" in node:
                         continue
 
@@ -386,7 +371,6 @@ class ChatAgentService:
                             msg_class = last_msg.__class__.__name__
 
                             if msg_class == "AIMessage":
-                                # 捕获调用的子智能体 (基于 deepagents 的 task 工具调用)
                                 if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
                                     for tc in last_msg.tool_calls:
                                         if tc["name"] == "task":
@@ -395,8 +379,6 @@ class ChatAgentService:
                                                 called_agents.add(sub_type)
 
                                 content = last_msg.content or ""
-
-                                # 处理多模态消息
                                 if isinstance(content, list):
                                     content = " ".join(
                                         block.get("text", "")
@@ -405,7 +387,6 @@ class ChatAgentService:
                                     )
 
                                 if content.strip():
-                                    # 发送 token
                                     yield {
                                         "type": "token",
                                         "content": content,
@@ -431,18 +412,7 @@ class ChatAgentService:
             except Exception as e:
                 logger.warning(f"后台归档失败: {e}")
 
-            # 计算耗时
             elapsed_time = time.time() - start_time
-
-            # 终端打印调用统计 (供开发者测试查看)
-            print(f"\n" + "="*60)
-            print(f"🌍 [EMS 多 Agent 协作统计]")
-            print(f"👤 用户请求: {message[:50]}...")
-            print(f"🤖 调用了 {len(called_agents)} 个子智能体: {', '.join(called_agents) if called_agents else '无'}")
-            print(f"⏱️ 总耗时: {elapsed_time:.2f}s")
-            print("="*60 + "\n")
-
-            # 发送完成信号
             yield {
                 "type": "done",
                 "content": None,
@@ -463,5 +433,75 @@ class ChatAgentService:
             }
 
 
+# ==========================================
+# 设备管理 (Simulated Device Service)
+# ==========================================
+
+class DeviceService:
+    """模拟设备服务"""
+    
+    def __init__(self):
+        # 初始模拟数据
+        self._devices: dict[str, dict] = {
+            "dev_001": {
+                "id": "dev_001",
+                "name": "西侧总电表",
+                "type": "电表",
+                "status": "online",
+                "location": "园区配电室 1-1",
+                "last_seen": datetime.now(),
+                "created_at": datetime.now(),
+                "metadata": {"brand": "ABB", "protocol": "Modbus-TCP"}
+            },
+            "dev_002": {
+                "id": "dev_002",
+                "name": "5kW 储能逆变器",
+                "type": "逆变器",
+                "status": "online",
+                "location": "A楼屋顶",
+                "last_seen": datetime.now(),
+                "created_at": datetime.now(),
+                "metadata": {"brand": "Huawei", "capacity": "5kW"}
+            }
+        }
+
+    async def list_devices(self) -> list[dict]:
+        """获取所有设备列表"""
+        return list(self._devices.values())
+
+    async def get_device(self, device_id: str) -> dict | None:
+        """获取指定设备详情"""
+        return self._devices.get(device_id)
+
+    async def create_device(self, data: dict) -> dict:
+        """创建设备"""
+        device_id = f"dev_{uuid.uuid4().hex[:8]}"
+        new_device = {
+            "id": device_id,
+            "status": "offline",
+            "last_seen": None,
+            "created_at": datetime.now(),
+            **data
+        }
+        self._devices[device_id] = new_device
+        return new_device
+
+    async def update_device(self, device_id: str, data: dict) -> dict | None:
+        """更新设备信息"""
+        if device_id not in self._devices:
+            return None
+        
+        self._devices[device_id].update(data)
+        return self._devices[device_id]
+
+    async def delete_device(self, device_id: str) -> bool:
+        """删除设备"""
+        if device_id in self._devices:
+            del self._devices[device_id]
+            return True
+        return False
+
+
 # 单例实例
 chat_service = ChatAgentService()
+device_service = DeviceService()

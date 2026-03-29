@@ -1,31 +1,30 @@
 {
     "entity_name": "device",
-    "description": "新增、查询或编辑工业储能设备，如电池簇、PCS 变流器或电表。",
+    "description": "管理工业设备，如电表、逆变器、电池等。",
     "operations": {
-        "create": { "endpoint": "/api/v1/devices", "method": "POST" },
+        "create": { "endpoint": "/api/v1/devices/", "method": "POST" },
         "get":    { "endpoint": "/api/v1/devices/{id}", "method": "GET" },
-        "update": { "endpoint": "/api/v1/devices/{id}", "method": "PUT" },
-        "list":   { "endpoint": "/api/v1/devices", "method": "GET" }
+        "update": { "endpoint": "/api/v1/devices/{id}", "method": "PATCH" },
+        "list":   { "endpoint": "/api/v1/devices/", "method": "GET" },
+        "delete": { "endpoint": "/api/v1/devices/{id}", "method": "DELETE" }
     },
     "properties": {
-        "device_name": {
+        "name": {
             "type": "string",
-            "description": "设备的名称，例如：1号南侧电池组"
+            "description": "设备名称，如：西侧总电表"
         },
-        "device_type": {
+        "type": {
             "type": "string",
-            "enum": ["BATTERY", "PCS", "METER"],
-            "description": "设备类别"
+            "description": "设备类型，如：电表、逆变器、电池"
         },
-        "serial_number": {
+        "location": {
             "type": "string",
-            "description": "产品序列号 (S/N)"
+            "description": "安装位置，如：园区配电室 1-1"
         },
-        "capacity_kwh": {
-            "type": "number",
-            "description": "设备额定容量 (kWh)，仅电池类需要",
-            "minimum": 0
+        "metadata": {
+            "type": "object",
+            "description": "设备元数据，如品牌、协议、容量等"
         }
     },
-    "required": ["device_name", "device_type", "serial_number"]
+    "required": ["name", "type"]
 }

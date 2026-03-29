@@ -95,6 +95,7 @@ def register_routers(app: FastAPI) -> None:
     """
     from src.demo.router import router as demo_router
     from src.projectApi.router import router as project_api_router
+    from src.projectApi.device_router import router as device_router
 
     # 健康检查路由
     @app.get("/health", tags=["Health"])
@@ -109,6 +110,7 @@ def register_routers(app: FastAPI) -> None:
     # API 路由
     app.include_router(demo_router, prefix=settings.API_V1_PREFIX)
     app.include_router(project_api_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(device_router, prefix=settings.API_V1_PREFIX)
 
 
 # 创建应用实例

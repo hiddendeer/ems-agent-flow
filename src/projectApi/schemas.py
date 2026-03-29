@@ -142,3 +142,37 @@ class ChatStreamChunk(CustomModel):
     error: str | None = Field(None, description="错误信息")
     session_id: str | None = Field(None, description="会话ID")
 
+
+# ==========================================
+# 设备管理 (Device Management) - 用于 MCP 测试
+# ==========================================
+
+class DeviceBase(CustomModel):
+    """设备基础信息"""
+    name: str = Field(..., min_length=1, max_length=100, description="设备名称")
+    type: str = Field(..., description="设备类型，如：电表、逆变器、电池")
+    location: str | None = Field(None, max_length=200, description="安装位置")
+    metadata: dict | None = Field(None, description="设备元数据配置")
+
+
+class DeviceCreate(DeviceBase):
+    """创建设备请求"""
+    pass
+
+
+class DeviceUpdate(CustomModel):
+    """更新设备请求"""
+    name: str | None = Field(None, min_length=1, max_length=100, description="设备名称")
+    type: str | None = Field(None, description="设备类型")
+    status: str | None = Field(None, description="设备状态：online/offline/fault")
+    location: str | None = Field(None, max_length=200, description="安装位置")
+    metadata: dict | None = Field(None, description="更新元数据")
+
+
+class DeviceResponse(DeviceBase):
+    """设备响应模型"""
+    id: str = Field(..., description="设备唯一标识符")
+    status: str = Field("offline", description="设备状态")
+    last_seen: datetime | None = Field(None, description="最后上线时间")
+    created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
+
