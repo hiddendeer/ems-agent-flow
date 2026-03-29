@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     # ========== InfluxDB 配置 ==========
     # 重要：这些字段建议在 .env 文件中配置
     INFLUXDB_URL: str = "http://localhost:8086"
-    INFLUXDB_TOKEN: str = "my-token"
+    INFLUXDB_TOKEN: str = ""  # 安全：从环境变量读取，不要硬编码
     INFLUXDB_ORG: str = "my-org"
     INFLUXDB_BUCKET: str = "battery_data"
 

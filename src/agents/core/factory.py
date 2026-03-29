@@ -78,8 +78,8 @@ class CrossPlatformPathMiddleware(AgentMiddleware):
                             modified_args[key] = new_path
                             has_changes = True
                             sys_name = platform.system()
-                            # 终端打印适配日志
-                            print(f"\n🌍 [{sys_name} 路径修正 ({req_name})] '{path_val}' -> '{new_path}'")
+                            # 使用 logger 记录路径修正
+                            logger.info(f"[{sys_name} 路径修正 ({req_name})] '{path_val}' -> '{new_path}'")
             
             # 如果发生了修改，使用内置的 override() 重新组装不可变 request
             if has_changes:
@@ -100,14 +100,14 @@ class TimingMiddleware(AgentMiddleware):
         start = time.time()
         result = handler(request)
         duration = time.time() - start
-        print(f"⏱️  [LLM Call] 耗时: {duration:.2f}s")
+        logger.debug(f"[LLM Call] 耗时: {duration:.2f}s")
         return result
 
     async def awrap_model_call(self, request, handler):
         start = time.time()
         result = await handler(request)
         duration = time.time() - start
-        print(f"⏱️  [LLM Call] 耗时: {duration:.2f}s")
+        logger.debug(f"[LLM Call] 耗时: {duration:.2f}s")
         return result
 
     def wrap_tool_call(self, request, handler):
@@ -116,20 +116,20 @@ class TimingMiddleware(AgentMiddleware):
         start = time.time()
         result = handler(request)
         duration = time.time() - start
-        print(f"🔧 [Tool Call: {tool_name}] 耗时: {duration:.2f}s")
+        logger.debug(f"[Tool Call: {tool_name}] 耗时: {duration:.2f}s")
         return result
 
     async def awrap_tool_call(self, request, handler):
         tool_call = getattr(request, "tool_call", {})
         tool_name = tool_call.get("name", "unknown")
         start = time.time()
-        
+
         result = handler(request)
         if inspect.isawaitable(result):
             result = await result
-            
+
         duration = time.time() - start
-        print(f"🔧 [Tool Call: {tool_name}] 耗时: {duration:.2f}s")
+        logger.debug(f"[Tool Call: {tool_name}] 耗时: {duration:.2f}s")
         return result
 
 

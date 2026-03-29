@@ -35,12 +35,10 @@ def timeout_fallback(timeout_seconds: float = 15.0, fallback_msg: str = "【系�
                 except concurrent.futures.TimeoutError:
                     error_str = f"⚠️ 熔断器触发: 工具 '{func.__name__}' 超过 {timeout_seconds}s 未响应后端接口。"
                     logger.error(error_str)
-                    print(error_str)  # 方便终端直接观察
                     return fallback_msg
                 except Exception as e:
                     error_str = f"⚠️ 工具异常: '{func.__name__}' 发生错误: {str(e)}"
                     logger.error(error_str)
-                    print(error_str)
                     return f"【系统提示】接口执行异常: {str(e)}。无法获取数据，请根据当前状况灵活回复。"
         return wrapper
     return decorator

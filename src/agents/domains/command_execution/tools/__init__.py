@@ -67,7 +67,8 @@ async def _call_mcp_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
                     text_content = result.content[0].text
                     try:
                         return json.loads(text_content)
-                    except:
+                    except json.JSONDecodeError:
+                        # JSON 解析失败，返回原始文本
                         return text_content
                 return result
     except Exception as e:
