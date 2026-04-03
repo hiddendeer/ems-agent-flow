@@ -240,7 +240,8 @@ async def query_device_status(device_id: str) -> str:
 __all__ = [
     "review_and_validate_command",
     "assess_command_risk",
-    "execute_device_command",
+    "generate_execution_proposal",  # 新增：生成执行提案
+    "execute_device_command",  # 保留用于兼容，但不推荐使用
     "log_operation",
     "emergency_stop_all",
     "query_device_status",
