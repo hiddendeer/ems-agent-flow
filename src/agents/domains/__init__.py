@@ -33,6 +33,7 @@ def register_all_domains():
     from . import search          # noqa: F401  # 电力情报搜索领域
     from . import pypsa_modeling  # noqa: F401  # 最低成本长期系统规划调度领域
     from . import command_execution  # noqa: F401  # 指令执行与安全审查领域
+    from . import device_management   # noqa: F401  # 设备录入与管理领域
     
     from ..core.registry import AgentRegistry
     logger.info(
