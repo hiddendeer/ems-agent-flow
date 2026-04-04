@@ -1,0 +1,330 @@
+{
+  "tools": [
+    {
+      "name": "device_create",
+      "description": "创建新的工业设备。设备是能源管理系统的基础实体，包括电表、逆变器、电池、充电桩等各类电力设备。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "设备名称，如：西侧总电表、1号逆变器、储能电池组A"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["meter", "inverter", "battery", "ev_charger", "solar_panel", "transformer", "switch", "sensor"],
+            "description": "设备类型：meter(电表)、inverter(逆变器)、battery(电池)、ev_charger(充电桩)、solar_panel(光伏板)、transformer(变压器)、switch(开关)、sensor(传感器)"
+          },
+          "location": {
+            "type": "string",
+            "description": "设备安装位置，如：园区配电室 1-1、屋顶东侧、地下停车场B2"
+          },
+          "capacity": {
+            "type": "number",
+            "minimum": 0,
+            "description": "设备容量（单位根据类型而定，如kW、kWh等）"
+          },
+          "model": {
+            "type": "string",
+            "description": "设备型号"
+          },
+          "manufacturer": {
+            "type": "string",
+            "description": "设备制造商"
+          },
+          "serial_number": {
+            "type": "string",
+            "description": "设备序列号"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["modbus", "opcua", "mqtt", "http", "tcp", "custom"],
+            "description": "通信协议类型"
+          },
+          "connection_params": {
+            "type": "object",
+            "properties": {
+              "host": { "type": "string", "description": "设备IP地址或主机名" },
+              "port": { "type": "integer", "description": "端口号" },
+              "slave_id": { "type": "integer", "description": "Modbus从站ID" },
+              "username": { "type": "string", "description": "认证用户名" },
+              "password": { "type": "string", "description": "认证密码" },
+              "topic": { "type": "string", "description": "MQTT主题" }
+            },
+            "description": "设备连接参数"
+          },
+          "polling_interval": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "数据采集轮询间隔（秒），默认60秒"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "其他元数据，如安装日期、维保信息、备注等"
+          }
+        },
+        "required": ["name", "type", "location"]
+      }
+    },
+    {
+      "name": "device_get",
+      "description": "获取指定设备的详细信息，包括设备属性、连接参数、实时状态等。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          },
+          "include_realtime-data": {
+            "type": "boolean",
+            "description": "是否包含实时数据，如当前功率、电压、电流等"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "device_list",
+      "description": "获取设备列表，支持按类型、位置、在线状态过滤。可分页查询。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["meter", "inverter", "battery", "ev_charger", "solar_panel", "transformer", "switch", "sensor"],
+            "description": "按设备类型过滤（可选）"
+          },
+          "location": {
+            "type": "string",
+            "description": "按位置过滤（支持模糊匹配）"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["online", "offline", "error"],
+            "description": "按在线状态过滤"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "返回结果数量限制，默认20"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "分页偏移量，默认0"
+          }
+        }
+      }
+    },
+    {
+      "name": "device_update",
+      "description": "更新已存在设备的信息。可以修改设备名称、位置、连接参数等配置。修改连接参数可能会影响设备通信。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "设备名称"
+          },
+          "location": {
+            "type": "string",
+            "description": "设备安装位置"
+          },
+          "capacity": {
+            "type": "number",
+            "minimum": 0,
+            "description": "设备容量"
+          },
+          "connection_params": {
+            "type": "object",
+            "description": "设备连接参数"
+          },
+          "polling_interval": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "数据采集轮询间隔（秒）"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "其他元数据"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "device_delete",
+      "description": "删除指定的设备。删除后设备及其历史数据将被移除，此操作不可恢复，请谨慎使用。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "要删除的设备ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "device_test_connection",
+      "description": "测试设备连接是否正常。用于验证设备配置是否正确，设备是否能够正常通信。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "device_read_data",
+      "description": "从设备读取实时数据。返回当前时刻的功率、电压、电流、温度等实时测量值。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "要读取的指标列表，如：['power', 'voltage', 'current']。为空则读取所有可用指标"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "device_write_command",
+      "description": "向设备发送控制命令。用于远程控制设备，如开关机、调节功率等。注意：此操作会直接影响设备运行。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          },
+          "command": {
+            "type": "string",
+            "enum": ["turn_on", "turn_off", "reset", "set_power", "set_mode", "start_charging", "stop_charging"],
+            "description": "控制命令类型"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "命令参数，如：{ \"power\": 500, \"mode\": \"eco\" }"
+          }
+        },
+        "required": ["id", "command"]
+      }
+    },
+    {
+      "name": "device_get_history",
+      "description": "获取设备的历史数据。用于查询设备在过去一段时间内的运行数据和趋势。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "设备ID"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "开始时间（ISO 8601格式），如：2024-01-01T00:00:00Z"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "结束时间（ISO 8601格式），如：2024-01-02T00:00:00Z"
+          },
+          "aggregation": {
+            "type": "string",
+            "enum": ["raw", "1min", "5min", "15min", "1hour", "1day"],
+            "description": "数据聚合方式：raw(原始)、1min(1分钟平均)、5min、15min、1hour、1day"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "要查询的指标列表，如：['power', 'voltage', 'current']"
+          }
+        },
+        "required": ["id", "start_time", "end_time"]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "device://list",
+      "name": "所有设备列表",
+      "description": "提供系统中所有设备的概览信息，包括设备ID、名称、类型、位置、在线状态等",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "device://online",
+      "name": "在线设备",
+      "description": "提供当前在线的所有设备信息及其实时状态",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "device://offline",
+      "name": "离线设备",
+      "description": "提供当前离线的所有设备信息及最后在线时间",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "device://summary",
+      "name": "设备统计摘要",
+      "description": "提供设备统计信息，包括总数、各类型数量、在线率等",
+      "mimeType": "application/json"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "troubleshoot_device",
+      "description": "设备故障排查辅助提示，帮助诊断设备通信问题或数据异常",
+      "arguments": [
+        {
+          "name": "device_id",
+          "description": "设备ID",
+          "required": true
+        },
+        {
+          "name": "issue_type",
+          "description": "问题类型，如：offline、data_error、high_latency",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "optimize_device_configuration",
+      "description": "优化设备配置的辅助提示，如调整轮询间隔、优化通信参数等",
+      "arguments": [
+        {
+          "name": "device_type",
+          "description": "设备类型",
+          "required": false
+        },
+        {
+          "name": "optimization_goal",
+          "description": "优化目标，如：reduce_latency、save_bandwidth、improve_accuracy",
+          "required": false
+        }
+      ]
+    }
+  ]
+}
