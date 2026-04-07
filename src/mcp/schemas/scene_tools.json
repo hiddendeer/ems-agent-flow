@@ -1,0 +1,316 @@
+{
+  "tools": [
+    {
+      "name": "scene_create",
+      "description": "创建一个新的能源管理场景。场景用于定义系统在不同情况下的运行模式，如正常运行、紧急停电、峰值用电、节能模式等。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "场景名称，如：正常运行、紧急停电、峰值用电、节能模式"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["normal", "emergency", "peak_shaving", "energy_saving", "maintenance"],
+            "description": "场景类型：normal(正常)、emergency(紧急)、peak_shaving(削峰)、energy_saving(节能)、maintenance(维护)"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "优先级，1-10，数字越大优先级越高"
+          },
+          "description": {
+            "type": "string",
+            "description": "场景详细描述"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": {
+                  "type": "string",
+                  "description": "设备ID"
+                },
+                "metric": {
+                  "type": "string",
+                  "description": "监测指标，如：power、voltage、current"
+                },
+                "operator": {
+                  "type": "string",
+                  "enum": ["gt", "lt", "eq", "gte", "lte"],
+                  "description": "比较运算符：gt(大于)、lt(小于)、eq(等于)、gte(大于等于)、lte(小于等于)"
+                },
+                "value": {
+                  "type": "number",
+                  "description": "阈值"
+                }
+              },
+              "required": ["device_id", "metric", "operator", "value"]
+            },
+            "description": "触发条件列表，当所有条件满足时触发场景。例如：当电表读数大于1000且电压低于220时触发紧急场景。"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": {
+                  "type": "string",
+                  "description": "目标设备ID"
+                },
+                "action": {
+                  "type": "string",
+                  "description": "操作类型，如：turn_on、turn_off、set_power、adjust_voltage"
+                },
+                "parameters": {
+                  "type": "object",
+                  "description": "操作参数，如：{ \"power\": 500, \"voltage\": 220 }"
+                }
+              },
+              "required": ["device_id", "action"]
+            },
+            "description": "场景激活时执行的操作列表。例如：关闭非关键设备、调整储能系统充放电功率等。"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "场景元数据，如创建时间、创建人、标签等"
+          }
+        },
+        "required": ["name", "type", "priority"]
+      }
+    },
+    {
+      "name": "scene_get",
+      "description": "获取指定场景的详细信息，包括场景配置、触发条件、执行动作等。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "场景ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_list",
+      "description": "获取所有场景列表，支持按类型、激活状态过滤。可以用于查看系统中配置的所有场景。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["normal", "emergency", "peak_shaving", "energy_saving", "maintenance"],
+            "description": "按场景类型过滤（可选）"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "按激活状态过滤（可选）"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "返回结果数量限制，默认20"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "分页偏移量，默认0"
+          }
+        }
+      }
+    },
+    {
+      "name": "scene_update",
+      "description": "更新已存在场景的配置信息。可以修改场景的名称、描述、优先级、触发条件和执行动作等。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "场景ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "场景名称"
+          },
+          "description": {
+            "type": "string",
+            "description": "场景详细描述"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "优先级，1-10"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": { "type": "string" },
+                "metric": { "type": "string" },
+                "operator": { "type": "string", "enum": ["gt", "lt", "eq", "gte", "lte"] },
+                "value": { "type": "number" }
+              },
+              "required": ["device_id", "metric", "operator", "value"]
+            },
+            "description": "触发条件列表"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": { "type": "string" },
+                "action": { "type": "string" },
+                "parameters": { "type": "object" }
+              },
+              "required": ["device_id", "action"]
+            },
+            "description": "执行动作列表"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "场景元数据"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_delete",
+      "description": "删除指定的场景。删除后场景将不再可用，请谨慎操作。建议先查询确认后再删除。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "要删除的场景ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_activate",
+      "description": "激活指定的场景。激活后，系统将根据场景配置的触发条件和执行动作进行自动化控制。高优先级场景会覆盖低优先级场景。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "要激活的场景ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_deactivate",
+      "description": "停用指定的场景。停用后，场景将不再响应触发条件，已执行的动作需要手动处理。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "要停用的场景ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_check_conditions",
+      "description": "检查指定场景的触发条件是否满足。返回当前各条件的实际值和是否满足的判断结果。可用于预判场景是否会触发。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "场景ID"
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "scene_execute_actions",
+      "description": "手动执行指定场景的操作动作，不需要等待触发条件满足。用于紧急情况下手动触发预设的应对措施。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "场景ID"
+          },
+          "async": {
+            "type": "boolean",
+            "description": "是否异步执行，默认false。异步执行时立即返回任务ID，可通过任务ID查询执行状态。"
+          }
+        },
+        "required": ["id"]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "scene://list",
+      "name": "所有场景列表",
+      "description": "提供系统中所有场景的概览信息，包括场景ID、名称、类型、优先级、激活状态等",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "scene://active",
+      "name": "当前激活场景",
+      "description": "提供当前正在运行的所有激活场景信息，包括触发时间、已执行动作等实时状态",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "scene://history",
+      "name": "场景执行历史",
+      "description": "提供场景的历史执行记录，包括触发时间、执行动作、执行结果等",
+      "mimeType": "application/json"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "create_emergency_scene",
+      "description": "创建紧急场景的辅助提示",
+      "arguments": [
+        {
+          "name": "emergency_type",
+          "description": "紧急情况类型，如：power_outage、overload、equipment_failure",
+          "required": true
+        },
+        {
+          "name": "affected_devices",
+          "description": "受影响的设备列表",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "optimize_energy_scene",
+      "description": "优化节能场景的辅助提示",
+      "arguments": [
+        {
+          "name": "target_consumption",
+          "description": "目标能耗值",
+          "required": true
+        },
+        {
+          "name": "time_period",
+          "description": "优化时间范围",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

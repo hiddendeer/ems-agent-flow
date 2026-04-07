@@ -1,0 +1,65 @@
+{
+  "proposal_id": "PROP-20260403-TEST-001",
+  "status": "pending_execution",
+  "created_at": "2026-04-03T21:19:56.398652",
+  "target": {
+    "device_id": "dev_001",
+    "device_type": "PCS",
+    "command_type": "charge",
+    "api_endpoint": "/api/v1/devices/pcs/charge",
+    "http_method": "POST",
+    "parameters": [
+      {
+        "name": "power",
+        "value": 100.0,
+        "data_type": "float",
+        "unit": "kW",
+        "range": {
+          "min": 0.0,
+          "max": 500.0
+        },
+        "required": true
+      },
+      {
+        "name": "target_soc",
+        "value": 80,
+        "data_type": "int",
+        "unit": "%",
+        "range": {
+          "min": 0.0,
+          "max": 100.0
+        },
+        "required": true
+      }
+    ],
+    "timeout_seconds": 30,
+    "retry_count": 3
+  },
+  "validation": {
+    "passed": true,
+    "parameter_validation": true,
+    "safety_check": true,
+    "permission_check": true,
+    "validation_timestamp": "2026-04-03T21:19:56.398652"
+  },
+  "risk_assessment": {
+    "risk_level": "low",
+    "risk_factors": [],
+    "confidence_score": 0.95,
+    "assessment_timestamp": "2026-04-03T21:19:56.398652"
+  },
+  "audit": {
+    "proposal_id": "PROP-20260403-TEST-001",
+    "operator": "system",
+    "agent_name": "CommandExecutionExpert",
+    "session_id": "test_session_001",
+    "created_at": "2026-04-03T21:19:56.398652",
+    "review_summary": "Test proposal for charging operation"
+  },
+  "metadata": {},
+  "priority": 5,
+  "tags": [
+    "test",
+    "charge"
+  ]
+}
