@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     # 其他配置
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
     
+    # InfluxDB 配置
+    INFLUXDB_URL: str = os.getenv("INFLUXDB_URL", "http://localhost:8086")
+    INFLUXDB_USER: str = os.getenv("INFLUXDB_USER", "")
+    INFLUXDB_PASSWORD: str = os.getenv("INFLUXDB_PASSWORD", "")
+    INFLUXDB_TOKEN: str = os.getenv("INFLUXDB_TOKEN", "")
+    INFLUXDB_ORG: str = os.getenv("INFLUXDB_ORG", "my-org")
+    INFLUXDB_BUCKET: str = os.getenv("INFLUXDB_BUCKET", "battery_data")
+    
     class Config:
         case_sensitive = True
 

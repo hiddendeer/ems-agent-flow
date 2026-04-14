@@ -19,12 +19,20 @@ class InfluxDBManager:
         url: str = settings.INFLUXDB_URL,
         token: str = settings.INFLUXDB_TOKEN,
         org: str = settings.INFLUXDB_ORG,
-        bucket: str = settings.INFLUXDB_BUCKET
+        bucket: str = settings.INFLUXDB_BUCKET,
+        username: str = settings.INFLUXDB_USER,
+        password: str = settings.INFLUXDB_PASSWORD
     ):
         self.url = url
-        self.token = token
         self.org = org
         self.bucket = bucket
+        
+        # 兼容性处理：如果没有提供 token 但提供了账号密码，则组合为 "user:pass" (InfluxDB 1.8 兼容格式)
+        if not token and username and password:
+            self.token = f"{username}:{password}"
+        else:
+            self.token = token
+
         self._client: Optional[InfluxDBClient] = None
         self._async_client: Optional[InfluxDBClientAsync] = None
 

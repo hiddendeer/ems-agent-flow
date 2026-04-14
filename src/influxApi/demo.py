@@ -13,60 +13,67 @@ def simulate_battery_data():
     """
     模拟电池数据并同步写入 InfluxDB
     """
-    print("Starting synchronous battery data simulation...")
+    print("Starting continuous synchronous battery data simulation (Ctrl+C to stop)...")
     battery_ids = ["BATT-001", "BATT-002", "BATT-003"]
     
-    for i in range(10):
-        for batt_id in battery_ids:
-            voltage = round(random.uniform(3.2, 4.2), 2)
-            current = round(random.uniform(0.5, 2.0), 2)
-            temperature = round(random.uniform(20.0, 45.0), 1)
+    try:
+        while True:
+            for batt_id in battery_ids:
+                voltage = round(random.uniform(3.2, 4.2), 2)
+                current = round(random.uniform(0.5, 2.0), 2)
+                temperature = round(random.uniform(20.0, 45.0), 1)
+                
+                # 创建 Point 对象
+                point = Point("battery_stats") \
+                    .tag("battery_id", batt_id) \
+                    .tag("location", "Warehouse-A") \
+                    .field("voltage", voltage) \
+                    .field("current", current) \
+                    .field("temperature", temperature) \
+                    .time(datetime.utcnow())
+                
+                print(f"Writing: {batt_id} | Voltage: {voltage}V, Current: {current}A, Temp: {temperature}C")
+                try:
+                    influx_manager.write_point(point)
+                except Exception as e:
+                    print(f"Error writing to InfluxDB: {e}")
             
-            # 创建 Point 对象
-            point = Point("battery_stats") \
-                .tag("battery_id", batt_id) \
-                .tag("location", "Warehouse-A") \
-                .field("voltage", voltage) \
-                .field("current", current) \
-                .field("temperature", temperature) \
-                .time(datetime.utcnow())
-            
-            print(f"Writing: {batt_id} | Voltage: {voltage}V, Current: {current}A, Temp: {temperature}C")
-            influx_manager.write_point(point)
-        
-        time.sleep(1)
-    print("Synchronous simulation completed.")
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nSimulation stopped by user.")
 
 async def simulate_battery_data_async():
     """
-    模拟电池数据并异步写入 InfluxDB
+    模拟电池数据并异步写入 InfluxDB (持续运行)
     """
-    print("\nStarting asynchronous battery data simulation...")
+    print("\nStarting continuous asynchronous battery data simulation (Ctrl+C to stop)...")
     battery_ids = ["BATT-001", "BATT-002", "BATT-003"]
     
-    for i in range(5):
-        tasks = []
-        for batt_id in battery_ids:
-            voltage = round(random.uniform(3.2, 4.2), 2)
-            current = round(random.uniform(0.5, 2.0), 2)
-            temperature = round(random.uniform(20.0, 45.0), 1)
+    try:
+        while True:
+            tasks = []
+            for batt_id in battery_ids:
+                voltage = round(random.uniform(3.2, 4.2), 2)
+                current = round(random.uniform(0.5, 2.0), 2)
+                temperature = round(random.uniform(20.0, 45.0), 1)
+                
+                point = Point("battery_stats") \
+                    .tag("battery_id", batt_id) \
+                    .tag("location", "Warehouse-B") \
+                    .field("voltage", voltage) \
+                    .field("current", current) \
+                    .field("temperature", temperature) \
+                    .time(datetime.utcnow())
+                
+                print(f"Writing (Async): {batt_id} | Voltage: {voltage}V")
+                tasks.append(influx_manager.write_point_async(point))
             
-            point = Point("battery_stats") \
-                .tag("battery_id", batt_id) \
-                .tag("location", "Warehouse-B") \
-                .field("voltage", voltage) \
-                .field("current", current) \
-                .field("temperature", temperature) \
-                .time(datetime.utcnow())
-            
-            print(f"Writing (Async): {batt_id} | Voltage: {voltage}V")
-            tasks.append(influx_manager.write_point_async(point))
-        
-        await asyncio.gather(*tasks)
-        await asyncio.sleep(1)
-    
-    await influx_manager.close()
-    print("Asynchronous simulation completed.")
+            await asyncio.gather(*tasks)
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("\nAsync simulation stopped by user.")
+    finally:
+        await influx_manager.close()
 
 if __name__ == "__main__":
     # 执行同步模拟
