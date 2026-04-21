@@ -81,6 +81,13 @@ class Settings(BaseSettings):
     INFLUXDB_ORG: str = "my-org"
     INFLUXDB_BUCKET: str = "battery_data"
 
+    # ========== Milvus 配置 ==========
+    MILVUS_HOST: str = ""
+    MILVUS_PORT: int = 19530
+    MILVUS_USER: str = ""
+    MILVUS_PASSWORD: str = ""
+    MILVUS_DB_NAME: str = "default"
+
 
     @property
     def DATABASE_URL(self) -> str:
@@ -149,6 +156,9 @@ class Settings(BaseSettings):
             "influxdb_url": self.INFLUXDB_URL,
             "influxdb_user": "***" if self.INFLUXDB_USER else "未配置",
             "influxdb_bucket": self.INFLUXDB_BUCKET,
+            "milvus_host": self.MILVUS_HOST or "未配置",
+            "milvus_port": self.MILVUS_PORT,
+            "milvus_db_name": self.MILVUS_DB_NAME,
         }
 
 
